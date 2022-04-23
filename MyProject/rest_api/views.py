@@ -16,6 +16,8 @@ from rest_framework import generics
 from rest_framework import mixins
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
 
 # Function Based API Views
 # This one is WEB API VIEW(format=API)
@@ -172,3 +174,43 @@ class GenericAPIView(generics.GenericAPIView, mixins.ListModelMixin, mixins.Crea
     
     def delete(self, request, id=None):
         return self.destroy(request, id)
+    
+# Implemeting Viewsets functionality in Django Rest Framework
+class ArticleViewsets(viewsets.ViewSet):
+    def list(self, request):
+        articles = Article.objects.all()
+        serializer = ArticleSerializer(articles, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        serializer = ArticleSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
+
+    def retrieve(self, request, pk=None):
+        articles = Article.objects.all()
+        article = get_object_or_404(articles, pk=pk)
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data)
+        
+    def update(self, request, pk=None):
+        article = Article.objects.get(pk=pk)
+        serializer = ArticleSerializer(article, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    def partial_update(self, request, pk=None):
+        pass
+
+    def destroy(self, request, pk=None):
+        pass
+    
+class ArticleViewsetsGeneric(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
+                             mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    serializer_class = ArticleSerializer
+    queryset = Article.objects.all()
